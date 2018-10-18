@@ -10,7 +10,7 @@ print("Running Webserver " + socket.gethostbyname(socket.gethostname()))
 while True:
     connection, addr = soc.accept()
     print("Thanks for connecting to me ", addr)
-    cfile = connection.makefile('w')
+    cfile = connection.makefile('w')  # This is what displays on the page
     cfile.write('HTTP/1.0 200 OK\n\n')
     cfile.write('<html><head><title>Black Site</title></head>')
     cfile.write("<h1>Secret Black Site</h1>")
@@ -18,6 +18,7 @@ while True:
     cfile.write('</body></html>')
     cfile.close()
 
+    # Not sure if we need this / what its for, but he had it in his demo
     #httpResponse = """
     """
 HTTP/1.1 200 OK
