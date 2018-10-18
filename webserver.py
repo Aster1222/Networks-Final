@@ -28,4 +28,4 @@ Content-Length: 12
 Connection: close
 Content-Type: text/html
 """
-#    connection.sendall(httpResponse)
+
