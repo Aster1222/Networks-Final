@@ -2,9 +2,19 @@ import socket
 port = 53
 ip = '127.0.0.1'
 
-soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-soc.bind((ip, port))
+def getIP(domainName):
+    if domainName == 'blacksite.secret':
+        return b'192.168.56.1'
+    else:
+        return socket.gethostbyname(domainName)
 
+
+soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+soc.bind((ip, port))
+soc.listen(5)  # #
 while 1:
-    data, addr = soc.recv(512)
-    print(data)
+    client, addr = soc.accept()
+    data = client.recv(1024)
+    if data:
+        client.send(getIP(str(data)[2:-1:1]))
+    client.close()
