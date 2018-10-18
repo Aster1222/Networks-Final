@@ -3,7 +3,7 @@ port = 53
 ip = '127.0.0.1'
 
 def getIP(domainName):
-    if domainName == 'blacksite.secret':
+    if domainName.decode() == 'blacksite.secret':
         return b'192.168.56.1'
     else:
         return socket.gethostbyname(domainName)
@@ -16,5 +16,5 @@ while 1:
     client, addr = soc.accept()
     data = client.recv(1024)
     if data:
-        client.send(getIP(str(data)[2:-1:1]))
+        client.send(getIP(data))
     client.close()

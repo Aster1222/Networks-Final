@@ -8,10 +8,10 @@ soc.bind((HOST, PORT))
 soc.listen(1)
 print("Running Webserver " + socket.gethostbyname(socket.gethostname()))
 
-dnsSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-dnsHost = "192.168.56.1"
-dnsPort = 53
-dnsSocket.connect((dnsHost, dnsPort))
+#dnsSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#dnsHost = "192.168.56.1"
+#dnsPort = 53
+#dnsSocket.connect((dnsHost, dnsPort))
 
 while True:
     connection, addr = soc.accept()
