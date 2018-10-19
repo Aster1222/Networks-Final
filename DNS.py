@@ -2,6 +2,7 @@ import socket
 port = 53
 ip = '127.0.0.1'
 
+
 def getIP(domainName):
     if domainName.decode() == 'blacksite.secret':
         return b'192.168.56.1'
