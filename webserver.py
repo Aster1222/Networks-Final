@@ -62,7 +62,7 @@ while 1:
     Connection: close
     Content-Type: text/html
 
-    <HTML><body style="background-color: black"> <p style="color: white"> Requester IP: """ + str(addr[0]) + """</p></body></HTML>"""
+    <HTML><body style="background-color: black"> <h1 style="color: white" >Super Secret Blacksite</h1><p style="color: white"> Requester IP: """ + str(addr[0]) + """</p></body></HTML>"""
 
 	print(httpResponse)
 	conn.send(httpResponse.encode())  # send response
