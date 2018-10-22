@@ -33,18 +33,18 @@ def getQuestionDomain(message):
 	expectedLength = 0
 	domainString = ''
 	domainParts = []
-	lengthRecordOnThisPart = 0
+	lengthRecordedOnThisPart = 0
 
 	for byte in message:
 		if recordingPath:
 			if byte != 0:
 				domainString += chr(byte)
-			lengthRecordOnThisPart += 1
-			if lengthRecordOnThisPart == expectedLength:
+			lengthRecordedOnThisPart += 1
+			if lengthRecordedOnThisPart == expectedLength:
 				domainParts.append(domainString)
 				domainString = ''
 				recordingPath = 0
-				lengthRecordOnThisPart = 0
+				lengthRecordedOnThisPart = 0
 			if byte == 0:
 				domainParts.append(domainString)
 				break
@@ -105,7 +105,7 @@ def responsePacketBuilder(message):
 	return dnsheader + dnsquestion + dnsbody
 
 
-print("The server is ready to receive")
+print("The server is ready to receive", gethostbyname(gethostname()))
 
 while 1:
    message, clientAddress = serverSocket.recvfrom(2048)
