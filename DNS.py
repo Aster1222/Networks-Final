@@ -6,10 +6,10 @@ serverSocket = socket(AF_INET, SOCK_DGRAM)
 serverSocket.bind(('', serverPort))
 
 
-'''
+"""
 RFC: https://www.ietf.org/rfc/rfc1035.txt
 following this for variable naming conventions
-'''
+"""
 
 def flagger(message):
 	"""
