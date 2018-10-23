@@ -12,6 +12,13 @@ following this for variable naming conventions
 '''
 
 def flagger(message):
+	"""
+	This method takes in all parts of the message after the transaction id to get the flags. Really only uses 1 byte.
+	Normally we would do some  bitwise calculation to calculate all the flags, but since we are always responding with the same
+	DNS response, we don't need to do those calculations
+	:param message: every part of the message after the transcation ID
+	:return: returns a byte string containing all the flags
+	"""
 	QR = '1'
 	OPCODE = ''
 	byte1 = bytes(message[:1])
@@ -29,6 +36,12 @@ def flagger(message):
 	return int(QR+OPCODE+AA+TC+RD, 2).to_bytes(1, byteorder='big') + int(RA+Z+RCODE, 2).to_bytes(1, byteorder='big')
 
 def getQuestionDomain(message):
+	"""
+	This method basically takes in part of the message (everything after the header) and spits out the URL
+	Normally, we'd calculate the qt value too, but since this DNS always spits back the same IP, we can hard code that too
+	:param message: everything in the message post header
+	:return: parts of the domain
+	"""
 	recordingPath = 0
 	expectedLength = 0
 	domainString = ''
@@ -55,26 +68,46 @@ def getQuestionDomain(message):
 	return domainParts
 
 def buildquestion(domainname):
-	qbytes = b''
+	"""
+	This builds the dns question. Basically, it conerts the domain name into a byte string and pads the end with a couple of bytes
+	:param domainname: this is a list of two strings that contains the parts of the name
+	:return: returns the final question byte string
+	"""
+	questionBytes = b''
 
 	for part in domainname:
-		qbytes += bytes([len(part)])
+		questionBytes += bytes([len(part)])
 		for char in part:
-			qbytes += ord(char).to_bytes(1, byteorder="big")
+			questionBytes += ord(char).to_bytes(1, byteorder="big")
 
-	return qbytes + (1).to_bytes(2, byteorder="big") + (1).to_bytes(2, byteorder="big")
+	return questionBytes + (1).to_bytes(2, byteorder="big") + (1).to_bytes(2, byteorder="big")
 
-def getDNSBody(recttl, recval):
+def getDNSBody(targetIPAddress):
+	"""
+	This builds up the DNS body. Most the of the values are hard coded and the only dynamically generated value is the IP
+	:param targetIPAddress: this is the IP address of the target webserver that the DNS server is trying to return (in this case it is the same IP address as the DNS server)
+	:return: the final DNS body
+	"""
+	NAME = b'\xc0\x0c'
+	TYPE = bytes([0]) + bytes([1])
+	CLASS = bytes([0]) + bytes([1])
+	TTL = int(420).to_bytes(4, byteorder='big')
+	RDLENGTH = bytes([0]) + bytes([4])
+	RDDATA = b''
 
-    rbytes = b'\xc0\x0c' + bytes([0]) + bytes([1]) + bytes([0]) + bytes([1]) + int(recttl).to_bytes(4, byteorder='big') + bytes([0]) + bytes([4])
+	for part in targetIPAddress.split('.'):
+		RDDATA += bytes([int(part)])
 
-    for part in recval.split('.'):
-    	rbytes += bytes([int(part)])
-
-    return rbytes
+	return NAME + TYPE + CLASS + TTL + RDLENGTH + RDDATA
 
 
 def responsePacketBuilder(message):
+	"""
+	This builds the response packet based on the message recieved by the server.
+	Note: the packet is mostly static with a couple dynamic parts as needed
+	:param message: the original message recieved by the server
+	:return: the fully build and ready to be sent response packet
+	"""
 	#### This grabs the transaction id from the UDP packet ####
 	transaction_id = message[:2]
 
@@ -95,22 +128,28 @@ def responsePacketBuilder(message):
 	#### ADDITIONAL COUNT ####
 	ARCOUNT = (0).to_bytes(2, byteorder="big") # we are assuming there is no additional stuff to make things easier
 
+	#### Finish building the head ####
 	dnsheader = transaction_id + flags + QDCOUNT + ANCOUNT + NSCOUNT + ARCOUNT
 
 	domainname = getQuestionDomain(message[12:])
 	dnsquestion = buildquestion(domainname)
 
-	dnsbody = getDNSBody(400, "192.168.0.21")
+	dnsbody = getDNSBody(gethostbyname(gethostname()))
 
 	return dnsheader + dnsquestion + dnsbody
 
 
-print("The server is ready to receive", gethostbyname(gethostname()))
+print("The server is ready to receive:", gethostbyname(gethostname()))
 
 while 1:
    message, clientAddress = serverSocket.recvfrom(2048)
    response = responsePacketBuilder(message)
    serverSocket.sendto(response, clientAddress)
+
+
+
+
+
 
 
 
