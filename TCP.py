@@ -9,6 +9,8 @@ tcpServerSocket = socket(AF_INET, SOCK_STREAM)
 tcpServerSocket.bind(('', serverPort))
 hostIP = gethostbyname(gethostname())
 
+def one_time_pad(og_message, key):
+	return og_message ^ key
 tcpServerSocket.listen(1)
 
 print("IP Address: " + str(hostIP))
@@ -18,7 +20,13 @@ print("connect with " + str(addr[0]) + " on port" + str(addr[1]))
 
 while 1:
 	data = conn.recv(1024)
-	print("binary of single letter transmitted it: " + str(bin(ord(data.decode()[0])))[2:])
+	original_data = ord(data.decode()[0])
+	print("binary of single letter transmitted it: " + "0" + str(bin(original_data))[2:])
+
+	encoded = str(bin(original_data ^ 170)) # does the one time pad by XORing with 10101010
+	print("binary of one time pad:               :", bin(170)[2:])
+	print("binary of result                      :", encoded[2:] + '\n')
+
 
 	if (data.decode().lower().strip() == "exit"):
 		conn.close()
@@ -28,20 +36,20 @@ while 1:
 '''
 Packet Structure
 
-Pre-Amble: 1010101010
+Pre-Amble: 11111111
 Header:
-	ID: 0000
+	ID: 00000000
 	Length: 00000000
 Body:
 	Data: 0000000
 Error Detection:
-	Bit Parity: 00000000000
+	Bit Parity: 000000000000
 
 10101010
-0000
 00000000
 00000000
-00000000000
+00000000
+
 '''
 
 
