@@ -1,24 +1,11 @@
-
-# coding: utf-8
-
-# In[27]:
-
-get_ipython().run_line_magic('pylab', '')
 import sounddevice as sd
 import numpy as np
 import matplotlib.pyplot as plt
-get_ipython().run_line_magic('matplotlib', 'inline')
-
-
-# In[28]:
 
 def encode_manchester(bits):
     manchester = np.array([[False, True] if b else [True, False] for b in bits])
     manchester = np.reshape(manchester, (-1, 1))
     return manchester
-
-
-# In[29]:
 
 def generate_am_signal(manchester_encoding, frequency, samp_per_bit, num_samples, samp_rate):
     M = np.tile(manchester_encoding,(1,int(samp_per_bit)))
@@ -26,8 +13,6 @@ def generate_am_signal(manchester_encoding, frequency, samp_per_bit, num_samples
     am_signal = M.ravel()*np.sin(2*np.pi*frequency*t)
     return am_signal, t
 
-
-# In[30]:
 
 def transmit(data, samp_rate, baud, frequency, len_preamble, packet_id='11111111', length=44):
     preamble = ''.join('1' for _ in range(8))
@@ -54,9 +39,6 @@ def transmit(data, samp_rate, baud, frequency, len_preamble, packet_id='11111111
     sd.play(am_signal, blocking=True)
     return packet, am_signal, t
 
-
-# In[31]:
-
 samp_rate = 44100  # sampling rate
 baud = 300  # symbol rate
 len_preamble = 10
@@ -74,14 +56,3 @@ print(output)
 fig = figure(figsize = (16,4))
 plot(t, am_signal)
 xlabel('time [s]')
-
-
-# In[ ]:
-
-
-
-
-# In[ ]:
-
-
-
