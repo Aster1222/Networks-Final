@@ -1,4 +1,7 @@
+#!/usr/bin/env python3
+
 from socket import *
+from transmit import transmit
 # import soundcard
 # import numpy
 
@@ -27,6 +30,12 @@ while 1:
 	print("binary of one time pad:               :", bin(170)[2:])
 	print("binary of result                      :", encoded[2:] + '\n')
 
+	samp_rate = 44100  # sampling rate
+	baud = 300  # symbol rate
+	len_preamble = 10
+	frequency = int(88.1e6)
+
+	transmit(encoded, samp_rate, baud, frequency, len_preamble, packet_id='11111111', length=44)
 
 	if (data.decode().lower().strip() == "exit"):
 		conn.close()
@@ -51,6 +60,7 @@ Error Detection:
 00000000
 
 '''
+
 
 
 

@@ -1,6 +1,5 @@
 import sounddevice as sd
 import numpy as np
-import matplotlib.pyplot as plt
 
 def encode_manchester(bits):
     manchester = np.array([[False, True] if b else [True, False] for b in bits])
@@ -54,5 +53,4 @@ for b in bits:
         output.append(0)
 print(output)
 fig = figure(figsize = (16,4))
-plot(t, am_signal)
 xlabel('time [s]')
