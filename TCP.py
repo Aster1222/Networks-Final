@@ -25,5 +25,24 @@ while 1:
 		break
 
 
+'''
+Packet Structure
+
+Pre-Amble: 1010101010
+Header:
+	ID: 0000
+	Length: 00000000
+Body:
+	Data: 0000000
+Error Detection:
+	Bit Parity: 00000000000
+
+10101010
+0000
+00000000
+00000000
+00000000000
+'''
+
 
 
