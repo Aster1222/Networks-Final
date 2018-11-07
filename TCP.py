@@ -2,10 +2,6 @@
 
 from socket import *
 from transmit import transmit
-# import soundcard
-# import numpy
-
-# import pyaudio
 
 serverPort = 4000
 tcpServerSocket = socket(AF_INET, SOCK_STREAM)
@@ -24,11 +20,10 @@ print("connect with " + str(addr[0]) + " on port" + str(addr[1]))
 while 1:
 	data = conn.recv(1024)
 	original_data = ord(data.decode()[0])
-	print("binary of single letter transmitted it: " + "0" + str(bin(original_data))[2:])
-
-	encoded = str(bin(original_data ^ 170)) # does the one time pad by XORing with 10101010
+        print("binary of single letter transmitted it: " + "0" + str(bin(original_data))[2:])
+        encoded = str(bin(original_data ^ 170))[2:]
 	print("binary of one time pad:               :", bin(170)[2:])
-	print("binary of result                      :", encoded[2:] + '\n')
+	print("binary of result                      :", encoded + '\n')
 
 	samp_rate = 44100  # sampling rate
 	baud = 300  # symbol rate
@@ -60,7 +55,3 @@ Error Detection:
 00000000
 
 '''
-
-
-
-

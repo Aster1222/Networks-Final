@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy import signal
 from rtlsdr import RtlSdr
 
@@ -128,7 +127,6 @@ n_bits = 44
 sdr = configure_sdr(frequency, offset, samp_rate)
 samples = collect_samples(sdr, num_samples)
 fm_demodulated_wave, new_samp_rate = fm_demodulate(samples, frequency, offset, samp_rate)
-plt.plot(fm_demodulated_wave[::10])
 
 fm_demodulated_wave_1 = fm_demodulated_wave[1000:]
 start_threshold = .25
@@ -138,12 +136,9 @@ samp_per_bit = new_samp_rate/baud
 stop = start + int(2 * samp_per_bit * n_bits)
 fm_demodulated_wave_2 = fm_demodulated_wave_1[start:stop]
 smoothed_wave = smooth(np.abs(fm_demodulated_wave_2), window_len=21, window='flat')
-plt.plot(smoothed_wave[::10])
 
 envelope = get_envelope(smoothed_wave)[10:-10]
 square_wave = binary_slicer(envelope)
-plt.plot(envelope)
-plt.plot(square_wave)
 
 rec_bits = decode_manchester(square_wave, samp_per_bit)
 print(rec_bits)

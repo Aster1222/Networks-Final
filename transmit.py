@@ -8,7 +8,7 @@ def encode_manchester(bits):
 
 def generate_am_signal(manchester_encoding, frequency, samp_per_bit, num_samples, samp_rate):
     M = np.tile(manchester_encoding,(1,int(samp_per_bit)))
-    t = r_[0.0:2*num_samples]/samp_rate
+    t = np.r_[0.0:2*num_samples]/samp_rate
     am_signal = M.ravel()*np.sin(2*np.pi*frequency*t)
     return am_signal, t
 
@@ -21,7 +21,6 @@ def transmit(data, samp_rate, baud, frequency, len_preamble, packet_id='11111111
     for component in components:
         grid.append([int(d) for d in component])
     grid = np.array(grid)
-    print(grid)
     
     col_parity = grid.sum(axis=0) % 2
     row_parity = grid.sum(axis=1) % 2
@@ -52,5 +51,3 @@ for b in bits:
     else:
         output.append(0)
 print(output)
-fig = figure(figsize = (16,4))
-xlabel('time [s]')
