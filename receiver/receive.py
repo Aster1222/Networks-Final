@@ -1,6 +1,8 @@
 import numpy as np
 from scipy import signal
 from rtlsdr import RtlSdr
+import asyncio
+import time
 
 def configure_sdr(frequency, offset, sample_rate):
     sdr = RtlSdr()
@@ -10,11 +12,6 @@ def configure_sdr(frequency, offset, sample_rate):
     sdr.gain = 'auto'
     return sdr
 
-def collect_samples(sdr, num_samples):
-    samples = sdr.read_samples(num_samples)
-    sdr.close()  
-    del(sdr)
-    return samples
 
 def fm_demodulate(samples, frequency, offset, samp_rate):
     x1 = np.array(samples).astype("complex64")
@@ -65,85 +62,58 @@ def smooth(x,window_len=11,window='hanning'):
     y=np.convolve(w/w.sum(),s,mode='valid')
     return y
 
-def detect_transmission_start(wave, start_threshold):
-    for i, s in enumerate(wave):
-        if s > start_threshold:
-            start = i - 100
-            return start
+def detect_transmission_present(wave, avg_threshold):
+    abs_wave = np.abs(wave)
+    avg = np.average(abs_wave)
+    if avg > avg_threshold:
+        return True
 
-def get_envelope(wave):
-    analytical_signal = signal.hilbert(wave)
-    envelope = np.abs(analytical_signal)
-    return envelope
+def detect_transmission_start(wave, amplitude_threshold, duration_threshold):
+    samples_above_thresh = 0
+    for i, s in enumerate(abs_wave):
+        if s > amplitude_threshold:
+            print(s)
+            samples_above_thresh += 1
+            if samples_above_thresh > duration_threshold:
+                start = i - duration_threshold
+                return start
+            else:
+                samples_above_thresh = 0
 
-def binary_slicer(envelope):
-    avg = np.average(envelope) + .02
-    print(f'avg: {avg}')
-    sliced = [1 if x > avg else 0 for x in envelope]
-    return sliced
-
-def decode_manchester(square_wave, samp_per_bit, threshold=None):
-    if threshold is None:
-        threshold = samp_per_bit / 1.5
-        
-    transitions = []
-    for i in range(len(square_wave)-1):
-        if square_wave[i] == 1 and square_wave[i+1] == 0:
-            transitions.append((i, 0))
-        if square_wave[i] == 0 and square_wave[i+1] == 1:
-            transitions.append((i, 1))
-
-    valid_transitions = [transitions[0]]
-    for t, b in transitions[1:]:
-        if np.abs(valid_transitions[-1][0] + (2*samp_per_bit) - t) < threshold:
-            valid_transitions.append((t, b))
-
-    bits = [b for _, b in valid_transitions]
-    return bits
-
-def error_correction(rec_bits):
-    grid = np.array(rec_bits[:-12]).reshape(4,8)
-    col_parity = grid.sum(axis=0) % 2
-    row_parity = grid.sum(axis=1) % 2
-    received_col_parity = np.array(rec_bits[32:40])
-    received_row_parity = np.array(rec_bits[40:44])
-    col_valid = np.array_equal(col_parity, received_col_parity)
-    row_valid = np.array_equal(row_parity, received_row_parity)
-    return col_valid, row_valid
-
-def demux(packet):
-    char_binary = ''.join(str(b) for b in packet[24:32])
-    print(char_binary)
-    print(chr(int(char_binary, 2) ^ 170))
 
 frequency = int(88.1e6)  # Pick a radio station  
 offset = 250000         # Offset to capture at  
 samp_rate = 1140000         # Sample rate  
-num_samples = 8192000           # Samples to capture  
+num_samples = samp_rate#8192000           # Samples to capture  
 baud = 300
 samp_per_bit = samp_rate/baud
 n_bits = 44
 
-sdr = configure_sdr(frequency, offset, samp_rate)
-samples = collect_samples(sdr, num_samples)
-fm_demodulated_wave, new_samp_rate = fm_demodulate(samples, frequency, offset, samp_rate)
+if __name__ == '__main__':
+    sdr = configure_sdr(frequency, offset, samp_rate)
+    amp_thresh = .25
+    duration_thresh = 10
+    async def streaming():
+        receiving_transmission = False
+        samples_collected = 0
+        async for samples in sdr.stream():
+            fm_demodulated_wave, new_samp_rate = fm_demodulate(samples, frequency, offset, samp_rate)
+            if not receiving_transmission:
+                start = detect_transmission_present(fm_demodulated_wave, amp_thresh)
+                if start:
+                    print('Detected transmission')
+                    receiving_transmission = True
+                    samples_collected = len(samples)
+                    transmission = np.array(fm_demodulated_wave)
+            if receiving_transmission:
+                samples_collected += len(samples)
+                transmission = np.concatenate((transmission, fm_demodulated_wave))
+                if samples_collected > num_samples:
+                    print('All samples collected')
+                    np.save(f'./transmissions/{str(int(time.time()))}', transmission)
+                    receiving_transmission = False
+                    await sdr.stop()
+        sdr.close()
 
-fm_demodulated_wave_1 = fm_demodulated_wave[1000:]
-start_threshold = .25
-start = detect_transmission_start(fm_demodulated_wave_1, start_threshold)
-start -= 100
-samp_per_bit = new_samp_rate/baud
-stop = start + int(2 * samp_per_bit * n_bits)
-fm_demodulated_wave_2 = fm_demodulated_wave_1[start:stop]
-smoothed_wave = smooth(np.abs(fm_demodulated_wave_2), window_len=21, window='flat')
-
-envelope = get_envelope(smoothed_wave)[10:-10]
-square_wave = binary_slicer(envelope)
-
-rec_bits = decode_manchester(square_wave, samp_per_bit)
-print(rec_bits)
-print(len(rec_bits))
-
-print(error_correction(rec_bits))
-
-demux(rec_bits)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(streaming())
