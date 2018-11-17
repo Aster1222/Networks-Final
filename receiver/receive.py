@@ -1,8 +1,10 @@
 import numpy as np
 from scipy import signal
+import scipy.fftpack
 from rtlsdr import RtlSdr
 import asyncio
 import time
+from decode import *
 
 def configure_sdr(frequency, offset, sample_rate):
     sdr = RtlSdr()
@@ -52,6 +54,7 @@ def fm_demodulate(samples, frequency, offset, samp_rate):
     x7 = signal.decimate(x6, dec_audio)  
     return x7, Fs_audio
 
+
 def smooth(x,window_len=11,window='hanning'):
     s=np.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
     if window == 'flat': #moving average
@@ -62,11 +65,18 @@ def smooth(x,window_len=11,window='hanning'):
     y=np.convolve(w/w.sum(),s,mode='valid')
     return y
 
-def detect_transmission_present(wave, avg_threshold):
-    abs_wave = np.abs(wave)
-    avg = np.average(abs_wave)
-    if avg > avg_threshold:
-        return True
+
+def detect_transmitter_on(samples, samp_rate, offset, offset_window=1, fft_window_size=100000, freq_magnitude_threshold=500000):
+    fft = scipy.fftpack.fft(samples)
+    freqs = scipy.fftpack.fftfreq(len(samples)) * samp_rate
+    index = np.where(np.abs(freqs - offset) < offset_window)[0]
+    if index.size == 0:
+        return False
+    index = index[0]
+    print(f'max around carrier freq: {np.max(np.abs(fft)[index-fft_window_size:index+fft_window_size])}')
+    return (np.max(np.abs(fft)[index-fft_window_size:index+fft_window_size]) 
+            > freq_magnitude_threshold)
+
 
 def detect_transmission_start(wave, amplitude_threshold, duration_threshold):
     samples_above_thresh = 0
@@ -81,38 +91,33 @@ def detect_transmission_start(wave, amplitude_threshold, duration_threshold):
                 samples_above_thresh = 0
 
 
-frequency = int(88.1e6)  # Pick a radio station  
-offset = 250000         # Offset to capture at  
-samp_rate = 1140000         # Sample rate  
-num_samples = samp_rate#8192000           # Samples to capture  
+frequency = int(88.1e6)
+offset = 250000
+samp_rate = 2**21 #1140000
+num_samples = samp_rate #8192000           # Samples to capture  
 baud = 300
 samp_per_bit = samp_rate/baud
 n_bits = 44
 
 if __name__ == '__main__':
     sdr = configure_sdr(frequency, offset, samp_rate)
-    amp_thresh = .25
-    duration_thresh = 10
     async def streaming():
+        now = time.time()
+        epsilon = .001
+        while(now - int(now) > epsilon):
+            now = time.time()
         receiving_transmission = False
         samples_collected = 0
-        async for samples in sdr.stream():
-            fm_demodulated_wave, new_samp_rate = fm_demodulate(samples, frequency, offset, samp_rate)
-            if not receiving_transmission:
-                start = detect_transmission_present(fm_demodulated_wave, amp_thresh)
-                if start:
-                    print('Detected transmission')
-                    receiving_transmission = True
-                    samples_collected = len(samples)
-                    transmission = np.array(fm_demodulated_wave)
-            if receiving_transmission:
-                samples_collected += len(samples)
-                transmission = np.concatenate((transmission, fm_demodulated_wave))
-                if samples_collected > num_samples:
-                    print('All samples collected')
-                    np.save(f'./transmissions/{str(int(time.time()))}', transmission)
-                    receiving_transmission = False
-                    await sdr.stop()
+        async for samples in sdr.stream(num_samples_or_bytes=num_samples):
+            if detect_transmitter_on(samples):
+                wave, new_samp_rate = fm_demodulate(samples, frequency, offset, samp_rate)
+                smoothed_wave = smooth(np.abs(wave), window_len=21, window='flat')
+                envelope = get_envelope(smoothed_wave)[10:-10]
+                square_wave = binary_slicer(envelope)
+                rec_bits = decode_manchester(square_wave, samp_per_bit)
+                col_valid, row_valid = error_correction(rec_bits)
+                demux(rec_bits)
+            #np.save(f'./samples/{str(int(time.time()))}', samples)
         sdr.close()
 
     loop = asyncio.get_event_loop()

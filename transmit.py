@@ -1,10 +1,12 @@
 import sounddevice as sd
 import numpy as np
+import time
 
 def encode_manchester(bits):
     manchester = np.array([[False, True] if b else [True, False] for b in bits])
     manchester = np.reshape(manchester, (-1, 1))
     return manchester
+
 
 def generate_am_signal(manchester_encoding, frequency, samp_per_bit, num_samples, samp_rate):
     M = np.tile(manchester_encoding,(1,int(samp_per_bit)))
@@ -34,7 +36,12 @@ def transmit(data, samp_rate, baud, frequency, len_preamble, packet_id='11111111
     num_samples = length * samp_per_bit
     manchester = encode_manchester(packet)
     am_signal, t = generate_am_signal(manchester, frequency, samp_per_bit, num_samples, samp_rate)
-    sd.play(am_signal, blocking=True)
+    while True:
+        now = time.time()
+        epsilon = .001
+        while(now - int(now) > epsilon):
+            now = time.time()
+        sd.play(am_signal, blocking=True)
     return packet, am_signal, t
 
 samp_rate = 44100  # sampling rate
