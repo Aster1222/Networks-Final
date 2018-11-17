@@ -27,7 +27,7 @@ while 1:
 
 	samp_rate = 44100  # sampling rate
 	baud = 300  # symbol rate
-	len_preamble = 10
+	len_preamble = 8
 	frequency = int(88.1e6)
 
 	transmit(encoded, samp_rate, baud, frequency, len_preamble, packet_id='11111111', length=44)

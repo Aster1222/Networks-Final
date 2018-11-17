@@ -14,22 +14,22 @@ def generate_am_signal(manchester_encoding, frequency, samp_per_bit, num_samples
 
 
 def transmit(data, samp_rate, baud, frequency, len_preamble, packet_id='11111111', length=44):
-    preamble = ''.join('1' for _ in range(8))
+    preamble = ''.join('1' for _ in range(len_preamble))
     len_packet = '00' + str(bin(length))[2:]
     components = [preamble, packet_id, len_packet, data]
     grid = []
     for component in components:
         grid.append([int(d) for d in component])
     grid = np.array(grid)
-    
+
     col_parity = grid.sum(axis=0) % 2
     row_parity = grid.sum(axis=1) % 2
-    
+
     packet = [d == 1 for d in np.nditer(grid)]
     packet += [d == 1 for d in col_parity]
     packet += [d == 1 for d in row_parity]
     packet = np.array(packet).reshape(-1,1)
-    
+
     samp_per_bit = samp_rate/baud
     num_samples = length * samp_per_bit
     manchester = encode_manchester(packet)
@@ -39,7 +39,7 @@ def transmit(data, samp_rate, baud, frequency, len_preamble, packet_id='11111111
 
 samp_rate = 44100  # sampling rate
 baud = 300  # symbol rate
-len_preamble = 10
+len_preamble = 8
 frequency = int(88.1e6)
 data ='11001011'
 

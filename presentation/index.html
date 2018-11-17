@@ -127,6 +127,47 @@ Address: 172.25.10.153
 					<section>
 						<h2>Broadcasting Information</h2>
 					</section>
+					<section>
+						<h3>TCP Server</h3>
+						<ol>
+							<li style="font-size: 30px;">Create a socket</li>
+								<ul>
+									<li style="font-size: 30px;">Set the server's socket port to port 4000</li>
+									<li style="font-size: 30px;">Set the server's ip to local ip</li>
+									<li style="font-size: 30px;">Set the server's buffer size to something small</li>
+									<li style="font-size: 30px;">Listen for as many connections as you want to serve (we chose 1)</li>
+								</ul>
+							<li style="font-size: 30px;">Accept incoming traffic</li>
+								<ul>
+									<li style="font-size: 30px;">Decoded the traffic into the ASCII character that was sent</li>
+									<li style="font-size: 30px;">Convert ASCII character to binary</li>
+									<li style="font-size: 30px;">Encrypt binary of ASCII character</li>
+								</ul>
+							<li style="font-size: 30px;">Set constants for transmission</li>
+								<ul>
+									<li style="font-size: 30px;">Set the sampling rate to: 44100</li>
+									<li style="font-size: 30px;">Set the baud (symbol rate) to: 300</li>
+									<li style="font-size: 30px;">Set the pre-amble length to: 8 bits</li>
+									<li style="font-size: 30px;">Set the frequency to: 88.1 khz</li>
+								</ul>
+							<li style="font-size: 30px;">Call transmit function to send data</li>
+						</ol>
+					</section>
+					<section>
+						<h3>Transmision</h3>
+						<ol>
+							<li style="font-size: 30px;">Create components of packet</li>
+							<li style="font-size: 30px;">Load each component into a numpy array</li>
+							<li style="font-size: 30px;">Calculate the grid parity</li>
+							<li style="font-size: 30px;">Consolidate components and grid parity into one packet</li>
+							<li style="font-size: 30px;">Generate manchester encoded numpy array</li>
+								<ul>
+									<li style="font-size: 30px;"> <code style="background-color: rgb(63, 63, 63)">[False, True]</code> for <code style="background-color: rgb(63, 63, 63)">1</code> and <code style="background-color: rgb(63, 63, 63)">[True, False]</code> for <code style="background-color: rgb(63, 63, 63)">0</code> </li>
+								</ul>
+							<li style="font-size: 30px;">Turn numpy array into AM signal</li>
+							<li style="font-size: 30px;">Play AM signal on soundcard</li>
+						</ol>
+					</section>
 				</section>
 
 				<section>
