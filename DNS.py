@@ -145,12 +145,3 @@ while 1:
    message, clientAddress = serverSocket.recvfrom(2048)
    response = responsePacketBuilder(message)
    serverSocket.sendto(response, clientAddress)
-
-
-
-
-
-
-
-
-
