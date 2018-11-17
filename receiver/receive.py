@@ -66,14 +66,13 @@ def smooth(x,window_len=11,window='hanning'):
     return y
 
 
-def detect_transmitter_on(samples, samp_rate, offset, offset_window=1, fft_window_size=100000, freq_magnitude_threshold=500000):
+def detect_transmitter_on(samples, samp_rate, offset, offset_window=1, fft_window_size=100000, freq_magnitude_threshold=440000):
     fft = scipy.fftpack.fft(samples)
     freqs = scipy.fftpack.fftfreq(len(samples)) * samp_rate
     index = np.where(np.abs(freqs - offset) < offset_window)[0]
     if index.size == 0:
         return False
     index = index[0]
-    print(f'max around carrier freq: {np.max(np.abs(fft)[index-fft_window_size:index+fft_window_size])}')
     return (np.max(np.abs(fft)[index-fft_window_size:index+fft_window_size]) 
             > freq_magnitude_threshold)
 
@@ -109,15 +108,19 @@ if __name__ == '__main__':
         receiving_transmission = False
         samples_collected = 0
         async for samples in sdr.stream(num_samples_or_bytes=num_samples):
-            if detect_transmitter_on(samples):
+            if detect_transmitter_on(samples, samp_rate, offset):
                 wave, new_samp_rate = fm_demodulate(samples, frequency, offset, samp_rate)
+                samp_per_bit = new_samp_rate/baud
                 smoothed_wave = smooth(np.abs(wave), window_len=21, window='flat')
                 envelope = get_envelope(smoothed_wave)[10:-10]
                 square_wave = binary_slicer(envelope)
                 rec_bits = decode_manchester(square_wave, samp_per_bit)
-                col_valid, row_valid = error_correction(rec_bits)
-                demux(rec_bits)
-            #np.save(f'./samples/{str(int(time.time()))}', samples)
+                print(f'time: {time.time()}')
+                print(f'received bits: {rec_bits}')
+                print(f'length received bits: {len(rec_bits)}')
+                if len(rec_bits) == 44:
+                    col_valid, row_valid = error_correction(rec_bits)
+                    demux(rec_bits)
         sdr.close()
 
     loop = asyncio.get_event_loop()

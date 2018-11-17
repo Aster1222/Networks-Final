@@ -8,7 +8,6 @@ def get_envelope(wave):
 
 def binary_slicer(envelope):
     avg = np.average(envelope) + .02
-    print(f'avg: {avg}')
     sliced = [1 if x > avg else 0 for x in envelope]
     return sliced
 
@@ -23,6 +22,8 @@ def decode_manchester(square_wave, samp_per_bit, threshold=None):
         if square_wave[i] == 0 and square_wave[i+1] == 1:
             transitions.append((i, 1))
 
+    if not transitions:
+        return []
     valid_transitions = [transitions[0]]
     for t, b in transitions[1:]:
         if np.abs(valid_transitions[-1][0] + (2*samp_per_bit) - t) < threshold:

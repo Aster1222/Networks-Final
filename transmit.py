@@ -36,12 +36,11 @@ def transmit(data, samp_rate, baud, frequency, len_preamble, packet_id='11111111
     num_samples = length * samp_per_bit
     manchester = encode_manchester(packet)
     am_signal, t = generate_am_signal(manchester, frequency, samp_per_bit, num_samples, samp_rate)
-    while True:
+    now = time.time()
+    epsilon = .001
+    while(now - int(now) > epsilon):
         now = time.time()
-        epsilon = .001
-        while(now - int(now) > epsilon):
-            now = time.time()
-        sd.play(am_signal, blocking=True)
+    sd.play(am_signal, blocking=True)
     return packet, am_signal, t
 
 samp_rate = 44100  # sampling rate

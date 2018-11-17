@@ -34,14 +34,15 @@ while True:
     len_preamble = 8
     frequency = int(88.1e6)
 
-    transmit(
-        encoded,
-        samp_rate,
-        baud,
-        frequency,
-        len_preamble,
-        packet_id='11111111',
-        length=44)
+    for _ in range(10):
+        transmit(
+            encoded,
+            samp_rate,
+            baud,
+            frequency,
+            len_preamble,
+            packet_id='11111111',
+            length=44)
 
     if (data.decode().lower().strip() == "exit"):
         conn.close()
