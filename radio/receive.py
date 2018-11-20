@@ -5,6 +5,7 @@ from rtlsdr import RtlSdr
 import asyncio
 import time
 from decode import *
+import config
 
 def configure_sdr(frequency, offset, sample_rate):
     sdr = RtlSdr()
@@ -66,62 +67,51 @@ def smooth(x,window_len=11,window='hanning'):
     return y
 
 
-def detect_transmitter_on(samples, samp_rate, offset, offset_window=1, fft_window_size=100000, freq_magnitude_threshold=440000):
+def detect_transmitter_on(samples, samp_rate, offset, offset_window=1, fft_window_size=100000, freq_magnitude_threshold=100000):
     fft = scipy.fftpack.fft(samples)
     freqs = scipy.fftpack.fftfreq(len(samples)) * samp_rate
     index = np.where(np.abs(freqs - offset) < offset_window)[0]
     if index.size == 0:
         return False
     index = index[0]
+
+    print('max freq val', np.max(np.abs(fft)[index-fft_window_size:index+fft_window_size]) )
     return (np.max(np.abs(fft)[index-fft_window_size:index+fft_window_size]) 
             > freq_magnitude_threshold)
 
 
-def detect_transmission_start(wave, amplitude_threshold, duration_threshold):
-    samples_above_thresh = 0
-    for i, s in enumerate(abs_wave):
-        if s > amplitude_threshold:
-            print(s)
-            samples_above_thresh += 1
-            if samples_above_thresh > duration_threshold:
-                start = i - duration_threshold
-                return start
-            else:
-                samples_above_thresh = 0
-
-
-frequency = int(88.1e6)
-offset = 250000
-samp_rate = 2**21 #1140000
-num_samples = samp_rate #8192000           # Samples to capture  
-baud = 300
-samp_per_bit = samp_rate/baud
-n_bits = 44
+def detect_transmission_start(wave, amplitude_threshold, count_threshold):
+    print(f'count above thresh: {(np.abs(wave[:5000]) > amplitude_threshold).sum()}')
+    return (np.abs(wave[:5000]) > amplitude_threshold).sum() > count_threshold
 
 if __name__ == '__main__':
-    sdr = configure_sdr(frequency, offset, samp_rate)
+    samp_per_bit = config.rec_samp_rate/config.baud
+    sdr = configure_sdr(config.frequency, config.offset, config.rec_samp_rate)
     async def streaming():
-        now = time.time()
-        epsilon = .001
-        while(now - int(now) > epsilon):
-            now = time.time()
-        receiving_transmission = False
-        samples_collected = 0
-        async for samples in sdr.stream(num_samples_or_bytes=num_samples):
-            if detect_transmitter_on(samples, samp_rate, offset):
-                wave, new_samp_rate = fm_demodulate(samples, frequency, offset, samp_rate)
-                samp_per_bit = new_samp_rate/baud
-                smoothed_wave = smooth(np.abs(wave), window_len=21, window='flat')
-                envelope = get_envelope(smoothed_wave)[10:-10]
-                square_wave = binary_slicer(envelope)
-                rec_bits = decode_manchester(square_wave, samp_per_bit)
-                print(f'time: {time.time()}')
-                print(f'received bits: {rec_bits}')
-                print(f'length received bits: {len(rec_bits)}')
-                if len(rec_bits) == 44:
-                    col_valid, row_valid = error_correction(rec_bits)
-                    demux(rec_bits)
+        async for samples in sdr.stream(num_samples_or_bytes=config.rec_samp_rate):
+            if detect_transmitter_on(samples, config.rec_samp_rate, config.offset):
+                wave, new_samp_rate = fm_demodulate(samples, config.frequency, config.offset, config.rec_samp_rate)
+                samp_per_bit = new_samp_rate/config.baud
+                detected = detect_transmission_start(wave, .5, 1)
+                print('detected', detected)
+                if detected:
+                    smoothed_wave = smooth(np.abs(wave), window_len=21, window='flat')
+                    envelope = get_envelope(smoothed_wave)[10:-10]
+                    square_wave = binary_slicer(envelope)
+                    rec_bits = decode_manchester(square_wave, samp_per_bit)
+                    print(f'time: {time.time()}')
+                    print(f'received bits: {rec_bits}')
+                    print(f'length received bits: {len(rec_bits)}')
+                    if len(rec_bits) == 44:
+                        col_valid, row_valid = error_correction(rec_bits)
+                        demux(rec_bits)
+                        np.save(f'samples/{int(time.time())}', samples)
         sdr.close()
 
+    now = time.time()
+    epsilon = .001
+    while(now - int(now) > epsilon):
+        now = time.time()
+    print(f'time: {time.time()}')
     loop = asyncio.get_event_loop()
     loop.run_until_complete(streaming())

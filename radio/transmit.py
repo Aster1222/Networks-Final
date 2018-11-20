@@ -1,6 +1,7 @@
 import sounddevice as sd
 import numpy as np
 import time
+import radio.config as config
 
 def encode_manchester(bits):
     manchester = np.array([[False, True] if b else [True, False] for b in bits])
@@ -15,7 +16,9 @@ def generate_am_signal(manchester_encoding, frequency, samp_per_bit, num_samples
     return am_signal, t
 
 
-def transmit(data, samp_rate, baud, frequency, len_preamble, packet_id='11111111', length=44):
+def transmit(data, len_preamble=8, packet_id=None, length=44):
+    if not packet_id:
+        packet_id = str(bin(config.cur_id))[2:]
     preamble = ''.join('1' for _ in range(len_preamble))
     len_packet = '00' + str(bin(length))[2:]
     components = [preamble, packet_id, len_packet, data]
@@ -32,28 +35,14 @@ def transmit(data, samp_rate, baud, frequency, len_preamble, packet_id='11111111
     packet += [d == 1 for d in row_parity]
     packet = np.array(packet).reshape(-1,1)
 
-    samp_per_bit = samp_rate/baud
+    samp_per_bit = config.transmit_samp_rate/config.baud
     num_samples = length * samp_per_bit
     manchester = encode_manchester(packet)
-    am_signal, t = generate_am_signal(manchester, frequency, samp_per_bit, num_samples, samp_rate)
+    am_signal, t = generate_am_signal(manchester, config.frequency, samp_per_bit, 
+                                      num_samples, config.transmit_samp_rate)
     now = time.time()
     epsilon = .001
     while(now - int(now) > epsilon):
         now = time.time()
     sd.play(am_signal, blocking=True)
     return packet, am_signal, t
-
-samp_rate = 44100  # sampling rate
-baud = 300  # symbol rate
-len_preamble = 8
-frequency = int(88.1e6)
-data ='11001011'
-
-bits, am_signal, t = transmit(data, samp_rate, baud, frequency, len_preamble)
-output = []
-for b in bits:
-    if b:
-        output.append(1)
-    else:
-        output.append(0)
-print(output)

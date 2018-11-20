@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 from socket import *
-from transmit import transmit
+from radio import transmit
+import time
 
 serverPort = 4000
 tcpServerSocket = socket(AF_INET, SOCK_STREAM)
@@ -29,20 +30,9 @@ while True:
     print("binary of one time pad:               :", bin(170)[2:])
     print("binary of result                      :", encoded + '\n')
 
-    samp_rate = 44100  # sampling rate
-    baud = 300  # symbol rate
-    len_preamble = 8
-    frequency = int(88.1e6)
-
-    for _ in range(10):
-        transmit(
-            encoded,
-            samp_rate,
-            baud,
-            frequency,
-            len_preamble,
-            packet_id='11111111',
-            length=44)
+    for _ in range(10):    
+        print(f'time: {time.time()}')
+        transmit.transmit(encoded)
 
     if (data.decode().lower().strip() == "exit"):
         conn.close()
