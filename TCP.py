@@ -28,8 +28,12 @@ if __name__ == '__main__':
         print(f'Transmitting the following message')
         print(message)
         bits = ''
-        for c in message:
-            bits += str(bin(ord(c) ^ ord(config.otp[config.otp_pos])))[2:]
+        for c in message.strip():
+            xor_bitstring = str(bin(ord(c) ^ ord(config.otp[config.otp_pos])))[2:]
+            for _ in range(8 - len(xor_bitstring)):
+                xor_bitstring = '0' + xor_bitstring
+
+            bits += xor_bitstring
             config.otp_pos = (config.otp_pos + 1) % config.otp_len
 
         print(bits)

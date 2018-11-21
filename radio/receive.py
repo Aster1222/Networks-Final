@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import numpy as np
 from scipy import signal
 import scipy.fftpack
@@ -79,33 +81,52 @@ def detect_transmitter_on(samples, samp_rate, offset, offset_window=1, fft_windo
             > freq_magnitude_threshold)
 
 
-def detect_transmission_start(wave, amplitude_threshold, count_threshold):
+def detect_transmission_present(wave, amplitude_threshold, count_threshold):
     return (np.abs(wave[:5000]) > amplitude_threshold).sum() > count_threshold
+
+
+def detect_transmission_start(wave):
+    window_size = 100
+    amp_thresh = .5
+    num_thresh = 10
+    for i in range(len(wave)-window_size):
+        if (np.abs(wave[i:i+window_size]) > amp_thresh).sum() > num_thresh:
+            return i
+    return 0
+
 
 if __name__ == '__main__':
     samp_per_bit = config.rec_samp_rate/config.baud
     sdr = configure_sdr(config.frequency, config.offset, config.rec_samp_rate)
-    fragmented = False
-    message = ''
     async def streaming():
+        fragmented = False
+        message = ''
         async for samples in sdr.stream(num_samples_or_bytes=config.rec_samp_rate):
             if detect_transmitter_on(samples, config.rec_samp_rate, config.offset):
                 wave, new_samp_rate = fm_demodulate(samples, config.frequency, config.offset, config.rec_samp_rate)
                 samp_per_bit = new_samp_rate/config.baud
-                detected = detect_transmission_start(wave, .5, 1)
+                detected = detect_transmission_present(wave, .5, 1)
                 if detected:
-                    smoothed_wave = smooth(np.abs(wave), window_len=21, window='flat')
-                    envelope = get_envelope(smoothed_wave)[10:-10]
-                    square_wave = binary_slicer(envelope)
-                    rec_bits = decode_manchester(square_wave, samp_per_bit)
-                    valid, received_msg, fragmented = demux(rec_bits)
-                    if valid:
-                        message += received_msg
-                        if message and not fragmented:
-                            print(message)
-                            message = ''
-                        if config.save_samples:
-                            np.save(f'samples/rec_{int(time.time())}', samples)
+                    start = detect_transmission_start(wave) - 500
+                    end = len(wave) - detect_transmission_start(wave[::-1]) + 500
+                    print(start)
+                    print(end)
+                    if start >= 0 and end <= len(wave):
+                        smoothed_wave = smooth(np.abs(wave[start:end]), window_len=21, window='flat')
+                        envelope = get_envelope(smoothed_wave)[10:-10]
+                        square_wave = binary_slicer(envelope)
+                        rec_bits = decode_manchester(square_wave, samp_per_bit)
+                        print('rec bit', rec_bits)
+                        print('len rec bits', len(rec_bits))
+                        np.save(f'samples/rec_{int(time.time())}', samples)
+                        valid, received_msg, fragmented = demux(rec_bits)
+                        if valid:
+                            message += received_msg
+                            if message and not fragmented:
+                                print('Received message:')
+                                print(message)
+                                print()
+                                message = ''
 
     now = time.time()
     epsilon = .001
