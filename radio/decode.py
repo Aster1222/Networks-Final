@@ -1,5 +1,7 @@
+#!/usr/bin/env python3
 import numpy as np
 from scipy import signal
+import config
 
 def get_envelope(wave):
     analytical_signal = signal.hilbert(wave)
@@ -32,36 +34,22 @@ def decode_manchester(square_wave, samp_per_bit, threshold=None):
     bits = [b for _, b in valid_transitions]
     return bits
 
-def error_correction(rec_bits):
-    grid = np.array(rec_bits[:-12]).reshape(4,8)
-    col_parity = grid.sum(axis=0) % 2
-    row_parity = grid.sum(axis=1) % 2
-    received_col_parity = np.array(rec_bits[32:40])
-    received_row_parity = np.array(rec_bits[40:44])
-    col_valid = np.array_equal(col_parity, received_col_parity)
-    row_valid = np.array_equal(row_parity, received_row_parity)
-    return col_valid, row_valid
+def checksum(packet):
+    return (sum(packet[:2] + packet[3:]) % 2) == packet[2]
+
+def bits2ascii(b):
+    return ''.join(chr(int(''.join(x), 2)) for x in zip(*[iter(b)]*8))
 
 def demux(packet):
-    char_binary = ''.join(str(b) for b in packet[24:32])
-    print(char_binary)
-    print(chr(int(char_binary, 2) ^ 170))
+    if not (len(packet) >= 3 and checksum(packet) and packet[0] == config.cur_id):
+        return False, None, None
 
-
-if __name__ == '__main__':
-    file_name = sys.argv[1]
-    fm_demodulated_wave = np.load(file_name)
-
-    smoothed_wave = smooth(np.abs(fm_demodulated_wave_2), window_len=21, window='flat')
-
-    envelope = get_envelope(smoothed_wave)[10:-10]
-    square_wave = binary_slicer(envelope)
-
-    rec_bits = decode_manchester(square_wave, samp_per_bit)
-    print(rec_bits)
-    print(len(rec_bits))
-
-    print(error_correction(rec_bits))
-
-    demux(rec_bits)
-
+    valid = True
+    config.cur_id = (config.cur_id + 1) % 2
+    fragmented = (packet[2] == 1)
+    bitstring = ''.join(str(b) for b in packet[3:])
+    ascii_str = bits2ascii(bitstring)
+    for c in ascii_str:
+        message += str(chr(ord(c) ^ ord(one_time_pad[config.otp_pos])))
+        config.otp_pos = (config.otp_pos + 1) % config.otp_len
+    return valid, message, fragmented

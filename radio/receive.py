@@ -75,38 +75,37 @@ def detect_transmitter_on(samples, samp_rate, offset, offset_window=1, fft_windo
         return False
     index = index[0]
 
-    print('max freq val', np.max(np.abs(fft)[index-fft_window_size:index+fft_window_size]) )
     return (np.max(np.abs(fft)[index-fft_window_size:index+fft_window_size]) 
             > freq_magnitude_threshold)
 
 
 def detect_transmission_start(wave, amplitude_threshold, count_threshold):
-    print(f'count above thresh: {(np.abs(wave[:5000]) > amplitude_threshold).sum()}')
     return (np.abs(wave[:5000]) > amplitude_threshold).sum() > count_threshold
 
 if __name__ == '__main__':
     samp_per_bit = config.rec_samp_rate/config.baud
     sdr = configure_sdr(config.frequency, config.offset, config.rec_samp_rate)
+    fragmented = False
+    message = ''
     async def streaming():
         async for samples in sdr.stream(num_samples_or_bytes=config.rec_samp_rate):
             if detect_transmitter_on(samples, config.rec_samp_rate, config.offset):
                 wave, new_samp_rate = fm_demodulate(samples, config.frequency, config.offset, config.rec_samp_rate)
                 samp_per_bit = new_samp_rate/config.baud
                 detected = detect_transmission_start(wave, .5, 1)
-                print('detected', detected)
                 if detected:
                     smoothed_wave = smooth(np.abs(wave), window_len=21, window='flat')
                     envelope = get_envelope(smoothed_wave)[10:-10]
                     square_wave = binary_slicer(envelope)
                     rec_bits = decode_manchester(square_wave, samp_per_bit)
-                    print(f'time: {time.time()}')
-                    print(f'received bits: {rec_bits}')
-                    print(f'length received bits: {len(rec_bits)}')
-                    if len(rec_bits) == 44:
-                        col_valid, row_valid = error_correction(rec_bits)
-                        demux(rec_bits)
-                        np.save(f'samples/{int(time.time())}', samples)
-        sdr.close()
+                    valid, received_msg, fragmented = demux(rec_bits)
+                    if valid:
+                        message += received_msg
+                        if message and not fragmented:
+                            print(message)
+                            message = ''
+                        if config.save_samples:
+                            np.save(f'samples/rec_{int(time.time())}', samples)
 
     now = time.time()
     epsilon = .001

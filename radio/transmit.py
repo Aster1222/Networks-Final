@@ -16,33 +16,32 @@ def generate_am_signal(manchester_encoding, frequency, samp_per_bit, num_samples
     return am_signal, t
 
 
-def transmit(data, len_preamble=8, packet_id=None, length=44):
-    if not packet_id:
+def transmit(data):
+    n = config.baud//2
+    data_frags = [data[i:i+n] for i in range(0, len(data), n)]
+    num_frags = len(data_frags)
+    print('data', data)
+    print('data frags', data_frags)
+    for i, data in enumerate(data_frags):
         packet_id = str(bin(config.cur_id))[2:]
-    preamble = ''.join('1' for _ in range(len_preamble))
-    len_packet = '00' + str(bin(length))[2:]
-    components = [preamble, packet_id, len_packet, data]
-    grid = []
-    for component in components:
-        grid.append([int(d) for d in component])
-    grid = np.array(grid)
+        config.cur_id = (config.cur_id + 1) % 2
+        checksum = '0'
+        if num_frags > 1 and i < num_frags - 1:
+            fragmented = '1'
+        else:
+            fragmented = '0'
 
-    col_parity = grid.sum(axis=0) % 2
-    row_parity = grid.sum(axis=1) % 2
+        packet = [int(packet_id), int(fragmented), int(checksum)] + [int(d) for d in data]
+        parity = sum(packet) % 2
+        packet[2] = parity
 
-    packet = [d == 1 for d in np.nditer(grid)]
-    packet += [d == 1 for d in col_parity]
-    packet += [d == 1 for d in row_parity]
-    packet = np.array(packet).reshape(-1,1)
-
-    samp_per_bit = config.transmit_samp_rate/config.baud
-    num_samples = length * samp_per_bit
-    manchester = encode_manchester(packet)
-    am_signal, t = generate_am_signal(manchester, config.frequency, samp_per_bit, 
-                                      num_samples, config.transmit_samp_rate)
-    now = time.time()
-    epsilon = .001
-    while(now - int(now) > epsilon):
+        samp_per_bit = config.transmit_samp_rate/config.baud
+        num_samples = len(packet) * samp_per_bit
+        manchester = encode_manchester(packet)
+        am_signal, t = generate_am_signal(manchester, config.frequency, samp_per_bit, 
+                                          num_samples, config.transmit_samp_rate)
         now = time.time()
-    sd.play(am_signal, blocking=True)
-    return packet, am_signal, t
+        epsilon = .001
+        while(now - int(now) > epsilon):
+            now = time.time()
+        sd.play(am_signal, blocking=True)
