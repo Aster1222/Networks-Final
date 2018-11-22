@@ -47,15 +47,18 @@ def bits2ascii(b):
 
 def demux(packet):
     if not(len(packet) >= config.packet_header_len):
-        print('Packet too short')
+        if config.debug:
+            print('Packet too short')
         return False, None, None
     if not(checksum(packet)):
-        print('Packet failed checksum')
+        if config.debug:
+            print('Packet failed checksum')
         return False, None, None
     if not(packet[config.packet_id_pos] == config.cur_id):
-        print('Packet had incorrect id')
-        print('packet id', packet[config.packet_id_pos])
-        print('cur id', config.cur_id)
+        if config.debug:
+            print('Packet had incorrect id')
+            print('packet id', packet[config.packet_id_pos])
+            print('cur id', config.cur_id)
         return False, None, None
 
     valid = True

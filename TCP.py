@@ -36,6 +36,4 @@ if __name__ == '__main__':
             bits += xor_bitstring
             config.otp_pos = (config.otp_pos + 1) % config.otp_len
 
-        print(bits)
-
         transmit.transmit(bits)

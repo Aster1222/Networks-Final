@@ -19,12 +19,10 @@ def generate_am_signal(manchester_encoding, frequency, samp_per_bit, num_samples
 
 
 def transmit(data):
-    n = config.baud//2
+    n = config.baud//3
+    n -= n % 8
     data_frags = [data[i:i+n] for i in range(0, len(data), n)]
     num_frags = len(data_frags)
-    print('data', data)
-    print('data frags', data_frags)
-    print('cur id', config.cur_id)
     checksum = '0'
     preamble = [1 for _ in range(config.len_preamble)]
     for i, data in enumerate(data_frags):
@@ -34,7 +32,6 @@ def transmit(data):
             fragmented = '1'
         else:
             fragmented = '0'
-        print('fragmented', fragmented)
 
         packet = preamble + [int(packet_id), int(fragmented), int(checksum)] + [int(d) for d in data]
         parity = sum(packet) % 2
@@ -49,8 +46,6 @@ def transmit(data):
         if config.save_samples:
             np.save(f'{config.path}/am_signal_{int(time.time())}', np.array(am_signal))
             np.save(f'{config.path}/t_{int(time.time())}', np.array(t))
-        print('sending packet', packet)
-        print('packet len', len(packet))
         for _ in range(2):
             now = time.time()
             epsilon = .001
