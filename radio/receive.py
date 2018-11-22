@@ -117,7 +117,7 @@ if __name__ == '__main__':
                         valid, received_msg, fragmented = demux(rec_bits)
                         if valid:
                             if config.save_samples:
-                                np.save(f'samples/rec_{int(time.time())}', samples)
+                                np.save(f'samples/rec', samples)
 
                             message += received_msg
                             if message and not fragmented:

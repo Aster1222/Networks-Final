@@ -44,9 +44,9 @@ def transmit(data):
                                           num_samples, config.transmit_samp_rate)
 
         if config.save_samples:
-            np.save(f'{config.path}/am_signal_{int(time.time())}', np.array(am_signal))
-            np.save(f'{config.path}/t_{int(time.time())}', np.array(t))
-        for _ in range(2):
+            np.save(f'{config.path}/am_signal', np.array(am_signal))
+            np.save(f'{config.path}/t', np.array(t))
+        for _ in range(config.repeat_transmission):
             now = time.time()
             epsilon = .001
             while(now - int(now) > epsilon):

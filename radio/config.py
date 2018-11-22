@@ -1,15 +1,16 @@
 #/usr/bin/env python3
 
 path = '/Users/collinshuff/Documents/UVa-Fall18/CS4457/Networks-Final/radio/samples'
-save_samples = False
+save_samples = True
 debug = False
 
 # Transmission/Reception Parameters
 transmit_samp_rate = 44100
+rec_samp_rate = 2**21
 baud = 300
 frequency = int(88.1e6)
 offset = 150000
-rec_samp_rate = 2**21
+repeat_transmission = 1
 
 # Packet parameters
 len_preamble = 5
@@ -21,5 +22,5 @@ packet_header_len = len_preamble + 3
 
 # One Time Pad
 otp_pos = 0
-otp = 'A'
+otp = 'The quick brown fox jumped over the lazy dog'
 otp_len = len(otp)
