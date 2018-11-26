@@ -1,0 +1,258 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Networks Final Project</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/blood.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body  style="background-color: black"	>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h3>Networks Final Project</h3>
+					<strong>CS 4457: Fall 2018</strong>
+					<p>
+						<small>Created by <a href="http://collinsrhuff.com/">Collins Huff</a>, <a href="https://rohitmusti.github.io/">Rohit Musti</a>, and <a href="">Andrew Walsh</a></small>
+					</p>
+				</section>
+
+				<section>
+					<section>
+						<h2>Web Server & DNS Server</h2>
+					</section>
+					<section>
+						<h3>Web Server</h3>
+						<ol>
+							<li style="font-size: 30px;">Create a socket</li>
+								<ul>
+									<li style="font-size: 30px;">Set the server's socket port to port 80</li>
+									<li style="font-size: 30px;">Set the server's ip to local ip</li>
+									<li style="font-size: 30px;">Set the server's buffer size to something small</li>
+									<li style="font-size: 30px;">Listen for as many connections as you want to serve (we chose 1)</li>
+								</ul>
+							<li style="font-size: 30px;">Accept incoming traffic</li>
+								<ul>
+									<li style="font-size: 30px;">Grab IP address of user from the data they provide when trying to connect to the webserver</li>
+								</ul>
+							<li style="font-size: 30px;">Return blacksite web page as response</li>
+							<li style="font-size: 30px;">Print out response</li>
+							<li style="font-size: 30px;">Close connection w/ server</li>
+						</ol>
+					</section>
+					<section>
+						<h3>Expected Response</h3>
+						<p style="font-size: 30px;">
+							Enter: <code style="background-color: rgb(63, 63, 63)">curl localhost -v</code>
+						</p>
+							<pre><code class="hljs markdown">
+* Rebuilt URL to: localhost/
+*   Trying ::1...
+* TCP_NODELAY set
+* Connection failed
+* connect to ::1 port 80 failed: Connection refused
+*   Trying 127.0.0.1...
+* TCP_NODELAY set
+* Connected to localhost (127.0.0.1) port 80 (#0)
+> GET / HTTP/1.1
+> Host: localhost
+> User-Agent: curl/7.54.0
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+<     Server: Apache/2.2.8 (Ubuntu)
+<     Accept-Ranges: bytes
+<     Content-Length: 12
+<     Connection: close
+<     Content-Type: text/html
+* no chunk, no close, no size. Assume close to signal end
+<
+* Closing connection 0
+&lt;HTML&gt;&lt;body style=&quot;background-color: black&quot;&gt; &lt;h1 style=&quot;color: white&quot; &gt;Super Secret Blacksite&lt;/h1&gt;&lt;p style=&quot;color: white&quot;&gt; Requester IP: 127.0.0.1&lt;/p&gt;&lt;/body&gt;&lt;/HTML&gt;%							</code>
+							</pre>
+					</section>
+					<section>
+						<h3>DNS Server</h3>
+						<ol>
+							<li style="font-size: 30px;">Create a socket</li>
+								<ul>
+									<li style="font-size: 30px;">Set the server's socket port to port 53</li>
+									<li style="font-size: 30px;">Set the server's ip to local ip</li>
+									<li style="font-size: 30px;">Set the server's buffer size to something small</li>
+									<li style="font-size: 30px;">Listen for as many connections as you want to serve (we chose 1)</li>
+								</ul>
+							<li style="font-size: 30px;">Accept incoming traffic</li>
+							<li style="font-size: 30px;">Generate DNS traffic</li>
+								<ul>
+									<li style="font-size: 30px;">Grab transaction ID of request packet</li>
+									<li style="font-size: 30px;">Set flags to pre-set defaults for our packet (except for opcode which is grabbed from the packet)</li>
+									<li style="font-size: 30px;">Grab question, answer, nameserver, and additional count of request packet</li>
+									<li style="font-size: 30px;">Get domain name from request packet</li>
+									<li style="font-size: 30px;">Create DNS question and body with all of this information.</li>
+								</ul>
+							<li style="font-size: 30px;">Return DNS response to the client address</li>
+						</ol>
+					</section>
+					<section>
+						<h3>Expected Response</h3>
+						<p style="font-size: 30px;">
+							Enter: <code style="background-color: rgb(63, 63, 63)">nslookup blacksite.secret localhost</code>
+						</p>
+							<pre><code class="hljs markdown">
+Server:		localhost
+Address:	127.0.0.1#53
+
+Name:	blacksite.secret
+Address: 172.25.10.153
+							</code></pre>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>Broadcasting Information</h2>
+					</section>
+					<section>
+						<h3>TCP Server</h3>
+						<ol>
+							<li style="font-size: 30px;">Create a socket</li>
+								<ul>
+									<li style="font-size: 30px;">Set the server's socket port to port 4000</li>
+									<li style="font-size: 30px;">Set the server's ip to local ip</li>
+									<li style="font-size: 30px;">Set the server's buffer size to something small</li>
+									<li style="font-size: 30px;">Listen for as many connections as you want to serve (we chose 1)</li>
+								</ul>
+							<li style="font-size: 30px;">Accept incoming traffic</li>
+								<ul>
+									<li style="font-size: 30px;">Decoded the traffic into the ASCII character that was sent</li>
+									<li style="font-size: 30px;">Convert ASCII character to binary</li>
+									<li style="font-size: 30px;">Encrypt binary of ASCII character</li>
+								</ul>
+							<li style="font-size: 30px;">Set constants for transmission</li>
+								<ul>
+									<li style="font-size: 30px;">Set the sampling rate to: 44100</li>
+									<li style="font-size: 30px;">Set the baud (symbol rate) to: 300</li>
+									<li style="font-size: 30px;">Set the pre-amble length to: 8 bits</li>
+									<li style="font-size: 30px;">Set the frequency to: 88.1 khz</li>
+								</ul>
+							<li style="font-size: 30px;">Call transmit function to send data</li>
+						</ol>
+					</section>
+					<section>
+						<h3>Transmision</h3>
+						<ol>
+							<li style="font-size: 30px;">Create components of packet</li>
+							<li style="font-size: 30px;">Load each component into a numpy array</li>
+							<li style="font-size: 30px;">Calculate the grid parity</li>
+							<li style="font-size: 30px;">Consolidate components and grid parity into one packet</li>
+							<li style="font-size: 30px;">Generate manchester encoded numpy array</li>
+								<ul>
+									<li style="font-size: 30px;"> <code style="background-color: rgb(63, 63, 63)">[False, True]</code> for <code style="background-color: rgb(63, 63, 63)">1</code> and <code style="background-color: rgb(63, 63, 63)">[True, False]</code> for <code style="background-color: rgb(63, 63, 63)">0</code> </li>
+								</ul>
+							<li style="font-size: 30px;">Turn numpy array into AM signal</li>
+								<ul>
+									<li style="font-size: 30px;">generate a carrier sign wave </li>
+									<li style="font-size: 30px;">multiply by manchester encoded bits</li>
+									<li style="font-size: 30px;">should cancel out parts of the sine wave where false</li>
+								</ul>
+							<li style="font-size: 30px;">Play AM signal on soundcard</li>
+						</ol>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>Recieving Transmission</h2>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>Interpreting Packet</h2>
+					</section>
+					<section>
+						<h3>Packet Structure</h3>
+						<ol>
+							<li style="font-size: 30px;">Preamble</li>
+								<ul>
+									<li style="font-size: 30px;"><code style="background-color: rgb(63, 63, 63)">11111111</code></li>
+								</ul>
+							<li style="font-size: 30px;">Header</li>
+								<ul>
+									<li style="font-size: 30px;">Packet ID: <code style="background-color: rgb(63, 63, 63)">00000000</code></li>
+									<li style="font-size: 30px;">Length: <code style="background-color: rgb(63, 63, 63)">00000000</code></li>
+								</ul>
+							<li style="font-size: 30px;">Body</li>
+								<ul>
+									<li style="font-size: 30px;">Data: <code style="background-color: rgb(63, 63, 63)">00000000</code></li>
+								</ul>
+							<li style="font-size: 30px;">Error Detection</li>
+								<ul>
+									<li style="font-size: 30px;">Bit Parity: <code style="background-color: rgb(63, 63, 63)">00000000</code></li>
+								</ul>
+						</ol>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>Encryption</h2>
+					</section>
+					<section>
+						<h3>One Time Pad</h3>
+						<ol>
+							<li style="font-size: 30px;">Randomly Generate Key that is exactly as long as data being transmitted</li>
+								<ul>
+									<li style="font-size: 30px;">We just used <code style="background-color: rgb(63, 63, 63)"> 10101010 </code></li>
+									<li style="font-size: 30px;">When converted to an integer it is 170</li>
+									<li style="font-size: 30px;">Length is 8 bits because the length of an ASCII character is 8 bits</li>
+									<li style="font-size: 30px;">Also this is easier than dynamically generating random keys and having to manually code them into the decryptor</li>
+										<ul>
+											<li style="font-size: 30px;">That is how a true one time pad would work though.</li>
+										</ul>
+								</ul>
+							<li style="font-size: 30px;">Encrypt information with key</li>
+								<ul>
+									<li style="font-size: 30px;">We <code style="background-color: rgb(63, 63, 63)">XOR</code> 170 with the original data to produce encrypted data</li>
+								</ul>
+							<li style="font-size: 30px;">Decrypt information with key</li>
+							<ul>
+								<li style="font-size: 30px;">We <code style="background-color: rgb(63, 63, 63)">XOR</code> 170 with the encrypted data to produce original data</li>
+								<li style="font-size: 30px;">This works because of the mathematical property of <code style="background-color: rgb(63, 63, 63)">XOR</code></li>
+							</ul>
+						</ol>
+					</section>
+				</section>
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			Reveal.initialize({
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
