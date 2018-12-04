@@ -114,6 +114,8 @@ if __name__ == '__main__':
                         envelope = get_envelope(smoothed_wave)[10:-10]
                         square_wave = binary_slicer(envelope)
                         rec_bits = decode_manchester(square_wave, samp_per_bit)
+                        if config.debug:
+                            print(rec_bits)
                         valid, received_msg, fragmented = demux(rec_bits)
                         if valid:
                             if config.save_samples:
